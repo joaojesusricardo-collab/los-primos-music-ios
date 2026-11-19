@@ -1,4 +1,4 @@
-name: Gerar IPA Los Primos Music
+name: Gerar Builds iOS (IPA e Simulador APP)
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ipa:
+  build-ios:
     runs-on: macos-14
 
     steps:
@@ -21,7 +21,8 @@ jobs:
         run: |
           xcodegen generate
 
-      - name: Compilar App para iOS (Release)
+      # 1. BUILD PARA DISPOSITIVO REAL (Gera .IPA)
+      - name: Compilar App para Dispositivo Real
         run: |
           xcodebuild archive \
             -project LosPrimosMusic.xcodeproj \
@@ -33,15 +34,39 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Empacotar no Formato .IPA
-        run: |
           mkdir -p Payload
           cp -r "build/LosPrimosMusic.xcarchive/Products/Applications/Los Primos.app" Payload/
           zip -r LosPrimosMusic.ipa Payload/
 
+      # 2. BUILD PARA SIMULADOR / APPETIZE.IO (Gera .app.zip)
+      - name: Compilar App para iOS Simulator (Appetize / BrowserStack)
+        run: |
+          xcodebuild build \
+            -project LosPrimosMusic.xcodeproj \
+            -scheme LosPrimosMusic \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "build/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+          cd build/DerivedData/Build/Products/Release-iphonesimulator
+          zip -r ../../../../LosPrimosMusic-Simulator.app.zip "Los Primos.app"
+          cd -
+
+      # 3. UPLOAD DO .IPA (Dispositivo Físico)
       - name: Disponibilizar IPA para Download
         uses: actions/upload-artifact@v4
         with:
-          name: LosPrimosMusic-iOS-IPA
+          name: LosPrimosMusic-IPA
           path: LosPrimosMusic.ipa
+          retention-days: 14
+
+      # 4. UPLOAD DO .APP.ZIP (Para Appetize / Simuladores Web)
+      - name: Disponibilizar Simulador .app.zip para Appetize.io
+        uses: actions/upload-artifact@v4
+        with:
+          name: LosPrimosMusic-Simulator-APP-ZIP
+          path: LosPrimosMusic-Simulator.app.zip
           retention-days: 14
