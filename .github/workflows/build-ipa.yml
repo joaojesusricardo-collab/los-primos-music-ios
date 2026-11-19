@@ -7,21 +7,18 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-14
+    runs-on: macos-13
 
     steps:
       - name: Checkout do Repositório
         uses: actions/checkout@v4
 
       - name: Instalar XcodeGen
-        run: |
-          brew install xcodegen
+        run: brew install xcodegen
 
       - name: Gerar Projeto Xcode (.xcodeproj)
-        run: |
-          xcodegen generate
+        run: xcodegen generate
 
-      # 1. BUILD PARA DISPOSITIVO REAL (Gera .IPA)
       - name: Compilar App para Dispositivo Real
         run: |
           xcodebuild archive \
@@ -38,8 +35,7 @@ jobs:
           cp -r "build/LosPrimosMusic.xcarchive/Products/Applications/Los Primos.app" Payload/
           zip -r LosPrimosMusic.ipa Payload/
 
-      # 2. BUILD PARA SIMULADOR / APPETIZE.IO (Gera .app.zip)
-      - name: Compilar App para iOS Simulator (Appetize / BrowserStack)
+      - name: Compilar App para Simulador (Appetize.io)
         run: |
           xcodebuild build \
             -project LosPrimosMusic.xcodeproj \
@@ -53,20 +49,15 @@ jobs:
 
           cd build/DerivedData/Build/Products/Release-iphonesimulator
           zip -r ../../../../LosPrimosMusic-Simulator.app.zip "Los Primos.app"
-          cd -
 
-      # 3. UPLOAD DO .IPA (Dispositivo Físico)
       - name: Disponibilizar IPA para Download
         uses: actions/upload-artifact@v4
         with:
           name: LosPrimosMusic-IPA
           path: LosPrimosMusic.ipa
-          retention-days: 14
 
-      # 4. UPLOAD DO .APP.ZIP (Para Appetize / Simuladores Web)
       - name: Disponibilizar Simulador .app.zip para Appetize.io
         uses: actions/upload-artifact@v4
         with:
           name: LosPrimosMusic-Simulator-APP-ZIP
           path: LosPrimosMusic-Simulator.app.zip
-          retention-days: 14
